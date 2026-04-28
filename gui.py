@@ -73,7 +73,7 @@ class AppDemo(ctk.CTk, TkinterDnD.DnDWrapper):
 
             # 2. Guardar en SQLite
             doc_id = guardar_documento(nombre_fichero, texto_extraido)
-            self.resultado_txt.insert("end", f"✓ Guardado en SQLite (ID: {doc_id})\n")
+            self.resultado_txt.insert("end", f"✓ Guardado en MySQL (ID: {doc_id})\n")
 
             # 3. Llamar a Claude
             self.resultado_txt.insert("end", "Consultando a Claude (Simulado)...\n")
