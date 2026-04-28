@@ -1,45 +1,69 @@
-import sqlite3
+import os
+import mysql.connector
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def conectar():
+    return mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
+    )
+
 
 def inicializar_bbdd():
-    # Se crea el archivo 'proyecto_claude.db' si no existe
-    conexion = sqlite3.connect("proyecto_claude.db")
+    conexion = conectar()
     cursor = conexion.cursor()
 
-    # Creamos una tabla para los documentos
-    cursor.execute('''
-                   CREATE TABLE IF NOT EXISTS documentos (
-                                                             id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                             nombre_archivo TEXT,
-                                                             texto_extraido TEXT,
-                                                             respuesta_claude TEXT,
-                                                             fecha DATETIME
-                   )
-                   ''')
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS documentos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nombre_archivo VARCHAR(255),
+            texto_extraido LONGTEXT,
+            respuesta_claude LONGTEXT,
+            fecha DATETIME
+        )
+    """)
+
     conexion.commit()
+    cursor.close()
     conexion.close()
 
+
 def guardar_documento(nombre, texto):
-    conexion = sqlite3.connect("proyecto_claude.db")
+    conexion = conectar()
     cursor = conexion.cursor()
+
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    cursor.execute('''
-                   INSERT INTO documentos (nombre_archivo, texto_extraido, fecha)
-                   VALUES (?, ?, ?)
-                   ''', (nombre, texto, fecha_actual))
+    cursor.execute("""
+        INSERT INTO documentos (nombre_archivo, texto_extraido, fecha)
+        VALUES (%s, %s, %s)
+    """, (nombre, texto, fecha_actual))
 
     ultimo_id = cursor.lastrowid
 
     conexion.commit()
+    cursor.close()
     conexion.close()
+
     return ultimo_id
 
+
 def actualizar_respuesta_claude(doc_id, respuesta):
-    conexion = sqlite3.connect("proyecto_claude.db")
+    conexion = conectar()
     cursor = conexion.cursor()
-    cursor.execute('''
-                   UPDATE documentos SET respuesta_claude = ? WHERE id = ?
-                   ''', (respuesta, doc_id))
+
+    cursor.execute("""
+        UPDATE documentos 
+        SET respuesta_claude = %s 
+        WHERE id = %s
+    """, (respuesta, doc_id))
+
     conexion.commit()
+    cursor.close()
     conexion.close()
