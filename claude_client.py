@@ -7,488 +7,326 @@ load_dotenv()
 
 
 # ─────────────────────────────────────────────
-# PROMPTS POR TIPO DE PÓLIZA
+# CONFIGURACIÓN
 # ─────────────────────────────────────────────
 
-PROMPT_DETECCION = """
-Analiza este texto extraído de una póliza de seguro y determina el tipo.
-
-Texto:
-{texto}
-
-Responde ÚNICAMENTE con una de estas palabras exactas (sin explicación):
-AUTO
-HOGAR
-VIDA
-SALUD
-OTRO
-"""
-
-PROMPTS_EXTRACCION = {
-
-    "AUTO": """
-Eres un extractor experto de documentos de seguro de automóviles.
-El documento puede ser una póliza completa, un certificado de seguro, un suplemento o cualquier otro formato de asegurador.
-Extrae TODOS los campos que encuentres y devuelve ÚNICAMENTE un JSON válido.
-No añadas explicaciones, markdown ni texto fuera del JSON.
-Si un campo no aparece, ponlo a null. No inventes datos.
-
-Reglas de formato:
-- Fechas: convierte siempre a formato DD/MM/YYYY
-- Importes: solo el número sin símbolo de moneda ni puntos de miles (ej: 50000000)
-- Garantías: extrae TODAS las que aparezcan, incluyendo asistencia en viaje,
-  accidentes del conductor, protección jurídica, defensa multas, rotura de lunas, etc.
-  Si el límite dice "Incluida", pon capital_asegurado null e incluida true.
-  Usa descripcion_limite para límites con texto (ej: "150 km / gastos custodia 100€").
-- Si el tomador y el conductor autorizado son la misma persona, rellena ambas secciones.
-
-Texto del documento:
-{texto}
-
-Devuelve este JSON:
-{{
-  "poliza": {{
-    "numero_poliza": null,
-    "suplemento": null,
-    "tipo_documento": null,
-    "efecto": null,
-    "vencimiento": null,
-    "duracion": null,
-    "forma_pago": null,
-    "opcion_cobertura": null,
-    "fecha_emision": null,
-    "lugar_emision": null
-  }},
-  "asegurador": {{
-    "nombre": null,
-    "cif": null,
-    "direccion": null,
-    "ciudad": null,
-    "cp": null,
-    "email_dpo": null,
-    "web": null
-  }},
-  "centro_reale": {{
-    "codigo": null,
-    "nombre": null,
-    "direccion": null,
-    "telefono": null,
-    "fax": null,
-    "email": null
-  }},
-  "mediador": {{
-    "codigo": null,
-    "nombre": null,
-    "tipo": null,
-    "direccion": null,
-    "telefono": null,
-    "email": null
-  }},
-  "tomador": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "direccion": null,
-    "ciudad": null,
-    "cp": null,
-    "email": null,
-    "fecha_nacimiento": null
-  }},
-  "vehiculo": {{
-    "matricula": null,
-    "tipo": null,
-    "marca": null,
-    "modelo": null,
-    "uso": null,
-    "fecha_matriculacion": null,
-    "tiene_alarma": null,
-    "garaje": null,
-    "km_anuales": null,
-    "num_plazas": null,
-    "combustible": null
-  }},
-  "accesorios": [
-    {{
-      "descripcion": null,
-      "valor": null,
-      "incluido": null
-    }}
-  ],
-  "conductores": [
-    {{
-      "nombre": null,
-      "apellidos": null,
-      "nif": null,
-      "fecha_nacimiento": null,
-      "fecha_carnet": null,
-      "puntos_carnet": null,
-      "sexo": null,
-      "estado_civil": null,
-      "ocupacion": null,
-      "cp": null,
-      "tipo_conductor": null
-    }}
-  ],
-  "recibo": {{
-    "tipo": null,
-    "periodo_inicio": null,
-    "periodo_fin": null,
-    "prima": null,
-    "consorcio": null,
-    "dgs": null,
-    "impuestos": null,
-    "total": null
-  }},
-  "domiciliacion": {{
-    "banco": null,
-    "iban": null,
-    "bic": null,
-    "tipo_pago": null,
-    "referencia_mandato": null,
-    "fecha_firma": null,
-    "lugar_firma": null
-  }},
-  "garantias": [
-    {{
-      "nombre": null,
-      "categoria": null,
-      "capital_asegurado": null,
-      "incluida": null,
-      "territorio": null,
-      "descripcion_limite": null
-    }}
-  ]
-}}
-""",
-
-
-    "HOGAR": """
-Eres un extractor de datos de pólizas de seguro de hogar.
-Extrae todos los campos posibles y devuelve ÚNICAMENTE un JSON válido,
-sin explicaciones, sin markdown, sin texto adicional.
-
-Texto:
-{texto}
-
-Devuelve este JSON (pon null si no encuentras el campo):
-{{
-  "poliza": {{
-    "numero_poliza": null,
-    "suplemento": null,
-    "efecto": null,
-    "vencimiento": null,
-    "duracion": null,
-    "forma_pago": null,
-    "modalidad": null
-  }},
-  "asegurador": {{
-    "nombre": null,
-    "cif": null,
-    "direccion": null,
-    "ciudad": null
-  }},
-  "mediador": {{
-    "codigo": null,
-    "nombre": null,
-    "telefono": null,
-    "email": null
-  }},
-  "tomador": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "direccion": null,
-    "ciudad": null,
-    "cp": null,
-    "email": null
-  }},
-  "inmueble": {{
-    "direccion": null,
-    "ciudad": null,
-    "cp": null,
-    "tipo": null,
-    "uso": null,
-    "metros_cuadrados": null,
-    "anio_construccion": null,
-    "num_plantas": null,
-    "tiene_alarma": null,
-    "tipo_construccion": null
-  }},
-  "capitales": {{
-    "continente": null,
-    "contenido": null,
-    "rc_privada": null,
-    "valor_reconstruccion": null
-  }},
-  "recibo": {{
-    "tipo": null,
-    "periodo_inicio": null,
-    "periodo_fin": null,
-    "prima": null,
-    "impuestos": null,
-    "total": null
-  }},
-  "domiciliacion": {{
-    "banco": null,
-    "iban": null,
-    "tipo_pago": null
-  }},
-  "garantias": [
-    {{
-      "nombre": null,
-      "capital_asegurado": null,
-      "incluida": null,
-      "franquicia": null
-    }}
-  ]
-}}
-""",
-
-    "VIDA": """
-Eres un extractor de datos de pólizas de seguro de vida.
-Extrae todos los campos posibles y devuelve ÚNICAMENTE un JSON válido,
-sin explicaciones, sin markdown, sin texto adicional.
-
-Texto:
-{texto}
-
-Devuelve este JSON (pon null si no encuentras el campo):
-{{
-  "poliza": {{
-    "numero_poliza": null,
-    "efecto": null,
-    "vencimiento": null,
-    "duracion": null,
-    "forma_pago": null,
-    "modalidad": null
-  }},
-  "asegurador": {{
-    "nombre": null,
-    "cif": null,
-    "direccion": null
-  }},
-  "tomador": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "fecha_nacimiento": null,
-    "sexo": null,
-    "email": null
-  }},
-  "asegurado": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "fecha_nacimiento": null,
-    "sexo": null,
-    "profesion": null,
-    "fumador": null
-  }},
-  "beneficiarios": [
-    {{
-      "nombre": null,
-      "nif": null,
-      "porcentaje": null,
-      "parentesco": null
-    }}
-  ],
-  "capitales": {{
-    "fallecimiento": null,
-    "invalidez_absoluta": null,
-    "invalidez_parcial": null,
-    "enfermedad_grave": null
-  }},
-  "recibo": {{
-    "prima": null,
-    "impuestos": null,
-    "total": null,
-    "periodo": null
-  }},
-  "domiciliacion": {{
-    "banco": null,
-    "iban": null,
-    "tipo_pago": null
-  }},
-  "garantias": [
-    {{
-      "nombre": null,
-      "capital_asegurado": null,
-      "incluida": null
-    }}
-  ]
-}}
-""",
-
-    "SALUD": """
-Eres un extractor de datos de pólizas de seguro de salud.
-Extrae todos los campos posibles y devuelve ÚNICAMENTE un JSON válido,
-sin explicaciones, sin markdown, sin texto adicional.
-
-Texto:
-{texto}
-
-Devuelve este JSON (pon null si no encuentras el campo):
-{{
-  "poliza": {{
-    "numero_poliza": null,
-    "efecto": null,
-    "vencimiento": null,
-    "duracion": null,
-    "forma_pago": null,
-    "modalidad": null
-  }},
-  "asegurador": {{
-    "nombre": null,
-    "cif": null,
-    "direccion": null
-  }},
-  "tomador": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "fecha_nacimiento": null,
-    "email": null
-  }},
-  "asegurados": [
-    {{
-      "nombre": null,
-      "apellidos": null,
-      "nif": null,
-      "fecha_nacimiento": null,
-      "sexo": null,
-      "parentesco": null
-    }}
-  ],
-  "cobertura": {{
-    "tipo_cuadro_medico": null,
-    "ambito_territorial": null,
-    "copago": null,
-    "dental_incluido": null,
-    "optica_incluida": null
-  }},
-  "recibo": {{
-    "prima": null,
-    "impuestos": null,
-    "total": null,
-    "periodo": null
-  }},
-  "domiciliacion": {{
-    "banco": null,
-    "iban": null,
-    "tipo_pago": null
-  }},
-  "garantias": [
-    {{
-      "nombre": null,
-      "capital_asegurado": null,
-      "incluida": null,
-      "copago": null
-    }}
-  ]
-}}
-""",
-
-    "OTRO": """
-Eres un extractor de datos de documentos de seguro.
-Extrae todos los campos posibles y devuelve ÚNICAMENTE un JSON válido,
-sin explicaciones, sin markdown, sin texto adicional.
-
-Texto:
-{texto}
-
-Devuelve este JSON con los campos que encuentres:
-{{
-  "poliza": {{
-    "numero_poliza": null,
-    "efecto": null,
-    "vencimiento": null,
-    "forma_pago": null
-  }},
-  "asegurador": {{
-    "nombre": null,
-    "cif": null,
-    "direccion": null
-  }},
-  "tomador": {{
-    "nombre": null,
-    "apellidos": null,
-    "nif": null,
-    "email": null
-  }},
-  "recibo": {{
-    "prima": null,
-    "total": null
-  }},
-  "campos_extra": {{}}
-}}
-"""
-}
+MODELO_CLAUDE = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 
 
 # ─────────────────────────────────────────────
-# FUNCIONES PRINCIPALES
+# CLIENTE CLAUDE
 # ─────────────────────────────────────────────
 
 def _get_cliente():
     api_key = os.getenv("ANTHROPIC_API_KEY")
+
     if not api_key:
         raise ValueError("No se encontró ANTHROPIC_API_KEY en el fichero .env")
+
     return Anthropic(api_key=api_key)
 
 
-def detectar_tipo_poliza(texto: str) -> str:
-    """Pregunta a Claude qué tipo de póliza es."""
-    try:
-        cliente = _get_cliente()
-        resp = cliente.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=10,
-            messages=[{
-                "role": "user",
-                "content": PROMPT_DETECCION.format(texto=texto[:4000])
-            }]
-        )
-        tipo = resp.content[0].text.strip().upper()
-        return tipo if tipo in PROMPTS_EXTRACCION else "OTRO"
-    except Exception:
-        return "OTRO"
+# ─────────────────────────────────────────────
+# LIMPIEZA DE RESPUESTA
+# ─────────────────────────────────────────────
+
+def extraer_json_desde_texto(texto_respuesta):
+    """
+    Limpia la respuesta de Claude y se queda únicamente con el JSON.
+    """
+
+    if not texto_respuesta:
+        raise ValueError("Claude devolvió una respuesta vacía.")
+
+    texto = texto_respuesta.strip()
+
+    if texto.startswith("```"):
+        lineas = texto.splitlines()
+
+        if len(lineas) >= 3:
+            texto = "\n".join(lineas[1:-1]).strip()
+
+    inicio = texto.find("{")
+    fin = texto.rfind("}")
+
+    if inicio == -1 or fin == -1:
+        raise ValueError("No se encontró ningún JSON en la respuesta de Claude.")
+
+    texto_json = texto[inicio:fin + 1]
+
+    return json.loads(texto_json)
 
 
-def extraer_datos_poliza(texto: str, tipo: str) -> dict:
-    """Llama a Claude con el prompt específico y devuelve un dict limpio."""
-    try:
-        cliente = _get_cliente()
-        prompt = PROMPTS_EXTRACCION[tipo].format(texto=texto[:14000])
+# ─────────────────────────────────────────────
+# DETECCIÓN DEL TIPO DE SEGURO
+# ─────────────────────────────────────────────
 
-        resp = cliente.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4000,
-            messages=[{
+def detectar_tipo_poliza(texto):
+    """
+    Detecta el tipo de seguro.
+    """
+
+    cliente = _get_cliente()
+
+    prompt = f"""
+Analiza el siguiente texto extraído de un PDF de seguros.
+
+Tienes que clasificarlo en uno de estos tipos:
+
+AUTO
+HOGAR
+VIDA
+SALUD
+DECESOS
+COMERCIO
+COMUNIDAD
+OTRO
+
+Responde únicamente con una palabra de la lista anterior.
+No añadas explicación.
+
+Texto:
+\"\"\"
+{texto[:5000]}
+\"\"\"
+"""
+
+    respuesta = cliente.messages.create(
+        model=MODELO_CLAUDE,
+        max_tokens=20,
+        temperature=0,
+        messages=[
+            {
                 "role": "user",
                 "content": prompt
-            }]
-        )
+            }
+        ]
+    )
 
-        texto_respuesta = resp.content[0].text.strip()
+    tipo = respuesta.content[0].text.strip().upper()
 
-        # Limpiar posibles bloques markdown que se cuelen
-        if texto_respuesta.startswith("```"):
-            lineas = texto_respuesta.split("\n")
-            texto_respuesta = "\n".join(lineas[1:-1])
+    tipos_validos = {
+        "AUTO",
+        "HOGAR",
+        "VIDA",
+        "SALUD",
+        "DECESOS",
+        "COMERCIO",
+        "COMUNIDAD",
+        "OTRO"
+    }
 
-        return json.loads(texto_respuesta)
+    if tipo not in tipos_validos:
+        return "OTRO"
 
-    except json.JSONDecodeError as e:
-        return {"error": f"Claude no devolvió JSON válido: {str(e)}"}
+    return tipo
+
+
+# ─────────────────────────────────────────────
+# EXTRACCIÓN DINÁMICA
+# ─────────────────────────────────────────────
+
+def extraer_datos_dinamicos(texto, tipo_detectado):
+    """
+    Claude no usa campos predefinidos.
+    Claude decide las tablas y los campos según el PDF.
+    """
+
+    cliente = _get_cliente()
+
+    prompt = f"""
+Eres un sistema experto en extracción de datos de documentos PDF de seguros.
+
+El texto procede de un PDF de seguro.
+El tipo detectado inicialmente es: {tipo_detectado}
+
+Tu tarea es analizar el documento y devolver una estructura de base de datos dinámica.
+
+Muy importante:
+- No uses una plantilla fija.
+- No uses campos predefinidos.
+- No inventes datos.
+- No incluyas campos que no aparezcan en el texto.
+- No pongas campos con valor null.
+- Extrae todos los datos reales que puedas encontrar.
+- Agrupa los datos en tablas lógicas.
+- Cada sección importante del documento debe ser una tabla.
+- Si una sección tiene un solo registro, devuelve un objeto.
+- Si una sección tiene varios registros, devuelve una lista de objetos.
+- Los nombres de tablas y campos deben estar en español.
+- Usa nombres claros y sencillos.
+- Devuelve únicamente JSON válido.
+- No añadas explicaciones.
+- No uses markdown.
+
+Ejemplos de tablas que podrías crear si aparecen en el documento:
+- documento
+- poliza
+- aseguradora
+- tomador
+- asegurado
+- mediador
+- vehiculo
+- conductores
+- garantias
+- coberturas
+- recibos
+- domiciliacion
+- capitales
+- inmueble
+- beneficiarios
+- exclusiones
+- franquicias
+- asistencia
+- datos_administrativos
+- certificados
+- condiciones
+
+Formato obligatorio de respuesta:
+
+{{
+  "tipo_seguro": "{tipo_detectado}",
+  "descripcion": "descripción breve del documento",
+  "tablas": {{
+    "nombre_tabla_1": {{
+      "campo_1": "valor real encontrado",
+      "campo_2": "valor real encontrado"
+    }},
+    "nombre_tabla_2": [
+      {{
+        "campo_1": "valor real encontrado",
+        "campo_2": "valor real encontrado"
+      }},
+      {{
+        "campo_1": "valor real encontrado",
+        "campo_2": "valor real encontrado"
+      }}
+    ]
+  }}
+}}
+
+Reglas concretas:
+- Si ves datos de la póliza, crea una tabla "poliza".
+- Si ves datos del tomador, crea una tabla "tomador".
+- Si ves datos del vehículo, crea una tabla "vehiculo".
+- Si ves garantías o coberturas, crea una tabla "garantias" o "coberturas" como lista.
+- Si ves importes, respeta el importe tal como aparece.
+- Si ves fechas, respeta la fecha tal como aparece.
+- Si hay varias garantías, cada garantía debe ser un registro distinto dentro de una lista.
+- Si hay varios asegurados, cada asegurado debe ser un registro distinto dentro de una lista.
+- Si hay varios recibos, cada recibo debe ser un registro distinto dentro de una lista.
+- El JSON debe contener obligatoriamente la clave "tablas".
+- La clave "tablas" no puede estar vacía si se han encontrado datos.
+
+Texto del PDF:
+\"\"\"
+{texto[:25000]}
+\"\"\"
+"""
+
+    respuesta = cliente.messages.create(
+        model=MODELO_CLAUDE,
+        max_tokens=8000,
+        temperature=0,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    texto_respuesta = respuesta.content[0].text.strip()
+
+    datos = extraer_json_desde_texto(texto_respuesta)
+
+    return asegurar_formato_dinamico(datos, tipo_detectado)
+
+
+# ─────────────────────────────────────────────
+# ASEGURAR FORMATO CORRECTO
+# ─────────────────────────────────────────────
+
+def asegurar_formato_dinamico(datos, tipo_detectado):
+    """
+    Garantiza que la respuesta tenga esta forma:
+
+    {
+        "tipo_seguro": "...",
+        "descripcion": "...",
+        "tablas": {...}
+    }
+    """
+
+    if not isinstance(datos, dict):
+        return {
+            "tipo_seguro": tipo_detectado,
+            "descripcion": "Claude no devolvió un diccionario válido",
+            "tablas": {}
+        }
+
+    if "tablas" in datos and isinstance(datos["tablas"], dict):
+        if "tipo_seguro" not in datos:
+            datos["tipo_seguro"] = tipo_detectado
+
+        if "descripcion" not in datos:
+            datos["descripcion"] = "Documento procesado por Claude"
+
+        return datos
+
+    tablas = {}
+
+    claves_no_tabla = {
+        "tipo_seguro",
+        "tipo_poliza",
+        "descripcion",
+        "error"
+    }
+
+    for clave, valor in datos.items():
+        if clave not in claves_no_tabla:
+            tablas[clave] = valor
+
+    return {
+        "tipo_seguro": datos.get("tipo_seguro", tipo_detectado),
+        "descripcion": datos.get("descripcion", "Documento procesado por Claude"),
+        "tablas": tablas
+    }
+
+
+# ─────────────────────────────────────────────
+# FUNCIÓN PRINCIPAL QUE USA LA INTERFAZ
+# ─────────────────────────────────────────────
+
+def procesar_pdf_completo(texto):
+    """
+    Esta es la función que llama tu interfaz.
+
+    Devuelve:
+    tipo, datos
+
+    Donde datos ya viene preparado para crear tablas dinámicas.
+    """
+
+    try:
+        tipo = detectar_tipo_poliza(texto)
+        datos = extraer_datos_dinamicos(texto, tipo)
+
+        tipo_final = datos.get("tipo_seguro", tipo)
+
+        if tipo_final:
+            tipo_final = tipo_final.upper()
+        else:
+            tipo_final = tipo
+
+        datos["tipo_seguro"] = tipo_final
+
+        return tipo_final, datos
+
     except Exception as e:
-        return {"error": str(e)}
-
-
-def procesar_pdf_completo(texto: str) -> tuple[str, dict]:
-    """
-    Función principal que llama la GUI.
-    Devuelve (tipo_poliza, datos_extraidos).
-    """
-    tipo = detectar_tipo_poliza(texto)
-    datos = extraer_datos_poliza(texto, tipo)
-    return tipo, datos
+        return "OTRO", {
+            "tipo_seguro": "OTRO",
+            "descripcion": "Error procesando el documento con Claude",
+            "tablas": {},
+            "error": str(e)
+        }
