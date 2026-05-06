@@ -1,0 +1,5 @@
+# .env.example
+ORACLE_USER=tu_usuario
+ORACLE_PASSWORD=tu_password
+ORACLE_DSN=tu_ip:1521/xe
+ANTHROPIC_API_KEY=tu_api_key_aqui
