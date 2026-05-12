@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Documento {
+  id                Int               @id @default(autoincrement())
+  nombre_archivo    String            @db.NVarChar(255)
+  tipo_seguro       String            @db.NVarChar(100)
+  texto_extraido    String            @db.NVarChar(Max)
+  json_claude       String            @db.NVarChar(Max)
+  fecha_importacion DateTime          @default(now())
+
+  tablas_generadas  TablaGenerada[]
+  errores           ErrorImportacion[]
+
+  @@map("documentos")
+}
+
+model TablaGenerada {
+  id               Int      @id @default(autoincrement())
+  id_documento     Int
+  nombre_logico    String   @db.NVarChar(150)
+  nombre_mysql     String   @db.NVarChar(150)
+  filas_insertadas Int      @default(0)
+  fecha_creacion   DateTime @default(now())
+
+  documento        Documento @relation(fields: [id_documento], references: [id], onDelete: Cascade)
+
+  @@map("tablas_generadas")
+}
+
+model ErrorImportacion {
+  id             Int       @id @default(autoincrement())
+  id_documento   Int?
+  mensaje_error  String    @db.NVarChar(Max)
+  fecha          DateTime  @default(now())
+
+  documento      Documento? @relation(fields: [id_documento], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("errores_importacion")
+}

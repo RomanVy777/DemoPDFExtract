@@ -1,0 +1,116 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// schema.prisma — ORM Prisma para MySQL
+//
+// TRADUCCIÓN DESDE PYTHON (database_manager.py):
+//
+//   Python usaba mysql.connector con CREATE TABLE IF NOT EXISTS manuales.
+//   Aquí Prisma gestiona las 3 tablas "fijas" del sistema.
+//   Las tablas dinámicas generadas por Claude siguen creándose con Raw SQL
+//   ($executeRawUnsafe) para replicar exactamente la lógica de Python donde
+//   la estructura de la BD se determina en tiempo de ejecución según lo que
+//   devuelve la IA.
+//
+// VERIFICACIÓN MYSQL:
+//   ✅ AUTO_INCREMENT (no IDENTITY, que es SQL Server)
+//   ✅ LONGTEXT para textos largos (json_claude, texto_extraido)
+//   ✅ ENGINE=InnoDB con utf8mb4 para soporte completo Unicode/emoji
+//   ✅ ON DELETE CASCADE en claves foráneas
+//   ✅ DATETIME en lugar de TIMESTAMP para evitar problemas de zona horaria
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabla: documentos
+//
+// Python original (database_manager.py, línea 79):
+//   CREATE TABLE IF NOT EXISTS documentos (
+//     id INT AUTO_INCREMENT PRIMARY KEY,
+//     nombre_archivo VARCHAR(255),
+//     tipo_seguro VARCHAR(100),
+//     texto_extraido LONGTEXT,
+//     json_claude LONGTEXT,
+//     fecha_importacion DATETIME
+//   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+//
+// NOTA: json_claude se almacena como String (LONGTEXT en MySQL) en lugar de
+// tipo JSON nativo para evitar incompatibilidades con el JSON dinámico de
+// Claude que puede ser muy heterogéneo. Misma decisión que en Python.
+// ─────────────────────────────────────────────────────────────────────────────
+model Documento {
+  id               Int              @id @default(autoincrement())
+  nombre_archivo   String           @db.VarChar(255)
+  tipo_seguro      String           @db.VarChar(100)
+  texto_extraido   String           @db.LongText
+  json_claude      String           @db.LongText
+  fecha_importacion DateTime        @default(now())
+
+  // Relaciones: equivalente al ON DELETE CASCADE de Python
+  tablas_generadas TablaGenerada[]
+  errores          ErrorImportacion[]
+
+  @@map("documentos")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabla: tablas_generadas
+//
+// Python original (database_manager.py, línea 91):
+//   CREATE TABLE IF NOT EXISTS tablas_generadas (
+//     id INT AUTO_INCREMENT PRIMARY KEY,
+//     id_documento INT,
+//     nombre_logico VARCHAR(150),
+//     nombre_mysql VARCHAR(150),
+//     filas_insertadas INT,
+//     fecha_creacion DATETIME,
+//     FOREIGN KEY (id_documento) REFERENCES documentos(id) ON DELETE CASCADE
+//   )
+//
+// Registra qué tablas dinámicas se crearon para cada documento,
+// equivalente al guardar_registro_tabla_generada() de Python.
+// ─────────────────────────────────────────────────────────────────────────────
+model TablaGenerada {
+  id               Int      @id @default(autoincrement())
+  id_documento     Int
+  nombre_logico    String   @db.VarChar(150)
+  nombre_mysql     String   @db.VarChar(150)
+  filas_insertadas Int      @default(0)
+  fecha_creacion   DateTime @default(now())
+
+  documento        Documento @relation(fields: [id_documento], references: [id], onDelete: Cascade)
+
+  @@map("tablas_generadas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabla: errores_importacion
+//
+// Python original (database_manager.py, línea 101):
+//   CREATE TABLE IF NOT EXISTS errores_importacion (
+//     id INT AUTO_INCREMENT PRIMARY KEY,
+//     id_documento INT NULL,
+//     mensaje_error TEXT,
+//     fecha DATETIME,
+//     FOREIGN KEY (id_documento) REFERENCES documentos(id) ON DELETE CASCADE
+//   )
+//
+// id_documento es nullable (Int?) porque puede haber errores antes de crear
+// el documento en BD (ej: fallo al extraer texto del PDF).
+// ─────────────────────────────────────────────────────────────────────────────
+model ErrorImportacion {
+  id             Int      @id @default(autoincrement())
+  id_documento   Int?
+  mensaje_error  String   @db.Text
+  fecha          DateTime @default(now())
+
+  documento      Documento? @relation(fields: [id_documento], references: [id], onDelete: Cascade)
+
+  @@map("errores_importacion")
+}

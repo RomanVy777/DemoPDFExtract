@@ -1,0 +1,33 @@
+{
+  "name": "seguros-monorepo",
+  "version": "1.0.0",
+  "packageManager": "npm@10.0.0",
+  "private": true,
+  "description": "Monorepo: Extractor de pólizas de seguros con Claude AI — migrado desde Python/Tkinter a Next.js 14 + tRPC + Prisma + MySQL",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
+    "db:migrate": "turbo run db:migrate"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.22.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0",
+    "prisma": "^5.22.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
